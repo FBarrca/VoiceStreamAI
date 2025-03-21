@@ -5,9 +5,7 @@ import logging
 
 from src.asr.asr_factory import ASRFactory
 from src.vad.vad_factory import VADFactory
-
 from .server import Server
-
 
 def parse_args():
     parser = argparse.ArgumentParser(
@@ -69,8 +67,7 @@ def parse_args():
     )
     return parser.parse_args()
 
-
-def main():
+async def main():
     args = parse_args()
 
     logging.basicConfig()
@@ -97,9 +94,11 @@ def main():
         keyfile=args.keyfile,
     )
 
-    asyncio.get_event_loop().run_until_complete(server.start())
-    asyncio.get_event_loop().run_forever()
+    # Start the server
+    await server.start()
 
+    # Keep the server running indefinitely
+    await asyncio.Future()  # This future will never complete
 
 if __name__ == "__main__":
-    main()
+    asyncio.run(main())
