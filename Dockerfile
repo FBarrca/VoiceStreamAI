@@ -1,7 +1,5 @@
 # Use an NVIDIA CUDA base image with Python 3
-FROM nvidia/cuda:12.2.2-cudnn8-runtime-ubuntu22.04
-
-ENV PYTHON_VERSION=3.10
+FROM nvcr.io/nvidia/pytorch:25.02-py3
 
 # Set the working directory in the container
 WORKDIR /usr/src/app
@@ -15,15 +13,21 @@ RUN export DEBIAN_FRONTEND=noninteractive \
     && apt-get -qq install \
                    ffmpeg \
                    libsndfile1 \
-                   python3-pip \
-                   python${PYTHON_VERSION} \
     && rm -rf /var/lib/apt/lists/*
 
-# Copy the requirements.txt file
-COPY requirements.txt requirements.txt
+# Install Python packages from requirements.txt
+COPY req.txt req.txt
+COPY req-sb.txt req-sb.txt
+COPY req-pya.txt req-pya.txt
 
-# Install any needed packages specified in requirements.txt
-RUN pip3 install --no-cache-dir -r requirements.txt
+RUN pip3 install --no-cache-dir --pre torchaudio --index-url https://download.pytorch.org/whl/nightly/cu128 \
+    && pip3 install --no-cache-dir --pre torchvision --index-url https://download.pytorch.org/whl/nightly/cu128 \
+    && pip3 install --no-cache-dir -r req.txt \
+    && pip3 install --no-cache-dir -r req-sb.txt \
+    && pip3 install --no-cache-dir speechbrain>=1.0.0 \
+    && pip3 install --no-cache-dir -r req-pya.txt \
+    && pip3 install --no-cache-dir pyannote.audio>=3.2.0 --no-deps
+
 
 # Copy the rest of your application's code
 COPY . .
@@ -34,7 +38,7 @@ EXPOSE 8765
 # Define environment variable
 ENV NAME VoiceStreamAI
 
-# Set the entrypoint to your application
+# # Set the entrypoint to your application
 ENTRYPOINT ["python3", "-m", "src.main"]
 
 # Provide a default command (can be overridden at runtime)
